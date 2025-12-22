@@ -1,3 +1,4 @@
+"use client"
 import {
     Facebook,
     Twitter,
@@ -73,7 +74,7 @@ const redirectToStart=()=>{
             </p>
           </div>
           <div>
-            <Button onClick={redirectToStart}>
+            <Button className="w-full" onClick={redirectToStart}>
                 ابدأ الان
             </Button>
           </div>
