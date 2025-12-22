@@ -74,7 +74,7 @@ const redirectToStart=()=>{
             </p>
           </div>
           <div>
-            <Button className="w-full" onClick={redirectToStart}>
+            <Button className="w-full absolute z-90 bg-white text-blue-900 " onClick={redirectToStart}>
                 ابدأ الان
             </Button>
           </div>
