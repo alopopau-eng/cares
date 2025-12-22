@@ -72,12 +72,11 @@ const redirectToStart=()=>{
               <br />
               تاريخية والقابلية العالية في الريادة والمجتمعات
             </p>
+            <button onClick={redirectToStart} className="mt-8 px-8 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg rounded-full transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
+            ابدأ الآن
+          </button>
           </div>
-          <div>
-            <Button className="w-full absolute z-90 bg-white text-blue-900 " onClick={redirectToStart}>
-                ابدأ الان
-            </Button>
-          </div>
+         
         </section>
   
         {/* About Section */}
