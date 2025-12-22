@@ -37,19 +37,9 @@ import {
                     <Instagram className="w-4 h-4" />
                   </a>
                 </div>
-                <button className="px-3 py-1 bg-[#1e5a7d] text-white text-sm rounded">EN</button>
               </div>
   
-              {/* Logo */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-[#1e5a7d] rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">bCare</span>
-                  </div>
-                  <span className="text-2xl font-bold text-[#1e5a7d]">bCare</span>
-                </div>
-              </div>
-  
+         
               {/* Menu */}
               <button className="text-[#1e5a7d]">
                 <Menu className="w-6 h-6" />
