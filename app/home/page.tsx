@@ -61,7 +61,8 @@ import {
         {/* Hero Section */}
         <section className="relative h-[500px] bg-gradient-to-b from-[#1e5a7d] to-[#2c7ba5] overflow-hidden">
           <div className="absolute inset-0 opacity-20">
-            <div className="absolute inset-0 bg-[url('/bg.svg')] bg-cover bg-center" />
+            <div className="absolute inset-0 bg-[url('/bg.svg')] bg-cover bg-right" />
+            <div className="absolute inset-0 bg-[url('/ledt.svg')] bg-cover bg-left" />
           </div>
           <div className="relative container mx-auto px-4 h-full flex flex-col items-center justify-center text-center text-white">
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-balance">
