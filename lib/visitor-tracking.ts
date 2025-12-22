@@ -10,9 +10,9 @@
  * - Block system
  */
 
-import { addData, db } from "./firebase"
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore"
-
+import { doc, updateDoc } from "firebase/firestore"
+import { onDisconnect, onValue, ref, serverTimestamp, set } from "firebase/database";
+import { addData, database, db } from "./firebase";
 // Generate unique visitor reference number
 export function generateVisitorRef(): string {
   const timestamp = Date.now().toString(36)
@@ -139,87 +139,54 @@ export async function initializeVisitorTracking(visitorId: string) {
   await addData(trackingData)
   
   // Setup online/offline listeners
-  setupOnlineOfflineListeners(visitorId)
-  
-  // Setup activity tracker
-  setupActivityTracker(visitorId)
-  
   return trackingData
 }
+export const setupOnlineStatus = (userId: string) => {
+  if (!userId) return;
 
-// Setup online/offline status listeners
-function setupOnlineOfflineListeners(visitorId: string) {
-  if (typeof window === 'undefined') return
-  
-  const updateOnlineStatus = async (isOnline: boolean) => {
-    try {
-      await updateDoc(doc(db, "pays", visitorId), {
-        isOnline: isOnline,
-        lastActiveAt: new Date().toISOString()
-      })
-    } catch (error) {
-      console.error("Error updating online status:", error)
-    }
-  }
-  
-  window.addEventListener('online', () => updateOnlineStatus(true))
-  window.addEventListener('offline', () => updateOnlineStatus(false))
-  
-  // Update status on page visibility change
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      updateOnlineStatus(true)
-    }
-  })
-  
-  // Update status before page unload
-  window.addEventListener('beforeunload', () => {
-    updateOnlineStatus(false)
-  })
-}
+  // Create a reference to this user's specific status node in Realtime Database
+  const userStatusRef = ref(database, `/status/${userId}`);
 
-// Setup activity tracker (updates lastActiveAt every 30 seconds)
-function setupActivityTracker(visitorId: string) {
-  if (typeof window === 'undefined') return
-  
-  const updateActivity = async () => {
-    try {
-      await updateDoc(doc(db, "pays", visitorId), {
-        lastActiveAt: new Date().toISOString(),
-        isOnline: true
-      })
-    } catch (error) {
-      console.error("Error updating activity:", error)
-    }
-  }
-  
-  // Update activity every 30 seconds
-  const intervalId = setInterval(updateActivity, 30000)
-  
-  // Clear interval on page unload
-  window.addEventListener('beforeunload', () => {
-    clearInterval(intervalId)
-  })
-  
-  // Track user interactions
-  const events = ['mousedown', 'keydown', 'scroll', 'touchstart']
-  let lastActivityUpdate = Date.now()
-  
-  const handleActivity = () => {
-    const now = Date.now()
-    // Only update if more than 10 seconds since last update
-    if (now - lastActivityUpdate > 10000) {
-      lastActivityUpdate = now
-      updateActivity()
-    }
-  }
-  
-  events.forEach(event => {
-    document.addEventListener(event, handleActivity, { passive: true })
-  })
-}
+  // Create a reference to the user's document in Firestore
+  const userDocRef = doc(db, "pays", userId);
 
-// Update visitor page
+  // Set up the Realtime Database onDisconnect hook
+  onDisconnect(userStatusRef)
+    .set({
+      state: "offline",
+      lastChanged: serverTimestamp(),
+    })
+    .then(() => {
+      // Update the Realtime Database when this client connects
+      set(userStatusRef, {
+        state: "online",
+        lastChanged: serverTimestamp(),
+      });
+
+      // Update the Firestore document
+      updateDoc(userDocRef, {
+        online: true,
+        lastSeen: serverTimestamp(),
+      }).catch((error) =>
+        console.error("Error updating Firestore document:", error)
+      );
+    })
+    .catch((error) => console.error("Error setting onDisconnect:", error));
+
+  // Listen for changes to the user's online status
+  onValue(userStatusRef, (snapshot) => {
+    const status = snapshot.val();
+    if (status?.state === "offline") {
+      // Update the Firestore document when user goes offline
+      updateDoc(userDocRef, {
+        online: false,
+        lastSeen: serverTimestamp(),
+      }).catch((error) =>
+        console.error("Error updating Firestore document:", error)
+      );
+    }
+  });
+};
 export async function updateVisitorPage(visitorId: string, page: string, step: number) {
   try {
     await updateDoc(doc(db, "pays", visitorId), {

