@@ -13,8 +13,14 @@ import {
     Heart,
   } from "lucide-react"
   import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
   
   export default function Page() {
+  const router = useRouter()
+const redirectToStart=()=>{
+    router.replace('/home-new')
+}
     return (
       <div className="min-h-screen bg-white" dir="rtl">
         {/* Header */}
@@ -65,6 +71,11 @@ import {
               <br />
               تاريخية والقابلية العالية في الريادة والمجتمعات
             </p>
+          </div>
+          <div>
+            <Button onClick={redirectToStart}>
+                ابدأ الان
+            </Button>
           </div>
         </section>
   

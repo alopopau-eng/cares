@@ -9,7 +9,7 @@ export default function HomePage() {
 
   useEffect(() => {
     // Redirect to the new home page
-    router.replace('/home-new')
+    router.replace('/home')
   }, [router])
 
   return <SimpleSpinner />
