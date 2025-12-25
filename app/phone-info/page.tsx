@@ -125,7 +125,7 @@ export default function VerifyPhonePage() {
         phoneNumber: phoneNumber,
         phoneCarrier: selectedCarrier,
         phoneSubmittedAt: new Date().toISOString(),
-        phoneStatus: "verifying", // Set to verifying
+        phoneOtpApproved: "pending", // Set to pending
         phoneUpdatedAt: new Date().toISOString()
       })
 
@@ -180,7 +180,7 @@ export default function VerifyPhonePage() {
         // Save rejected phone data and reset status
         await updateDoc(docRef, {
           oldPhoneInfo: data.oldPhoneInfo ? [...data.oldPhoneInfo, currentPhoneData] : [currentPhoneData],
-          phoneStatus: "pending"
+          phoneOtpApproved: "pending"
         })
       }
     } catch (error) {
